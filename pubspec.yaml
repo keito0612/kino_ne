@@ -1,0 +1,41 @@
+name: kino_ne
+description: "経木ノートアプリ - 木の音、木の根。"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  flutter_hooks: ^0.20.5
+  hooks_riverpod: ^2.6.1
+
+
+  sqflite: ^2.4.1
+  path: ^1.9.1
+
+  intl: ^0.19.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0 
+
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.6.2
+
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+
+  # アセット（木目の画像など）を使う場合はここを解除してください
+  # assets:
+  #   - assets/images/
