@@ -3,162 +3,206 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kino_ne/models/page.dart';
 import 'package:kino_ne/view_models/page/page_view_model.dart';
+import 'package:kino_ne/theme/app_colors.dart';
 
 class EditorPage extends HookConsumerWidget {
   final int treeId;
-  final Page? page; // 既存ノートの編集ならPageが入る、新規ならnull
+  final Page? page;
 
   const EditorPage({super.key, required this.treeId, this.page});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Hooks: コントローラーの初期化
     final titleController = useTextEditingController(text: page?.title ?? '');
     final contentController = useTextEditingController(
       text: page?.content ?? '',
     );
 
-    // Hooks: 現在の文字数を監視して差分（成長量）を表示
     final currentContent = useValueListenable(contentController);
     final initialLength = page?.content.length ?? 0;
     final delta = (currentContent.text.length - initialLength)
         .clamp(0, double.infinity)
         .toInt();
 
-    Future<void> saveNote(BuildContext context) async {
-      try {
-        final currentContentText = contentController.text;
-        final initialLength = page?.content.length ?? 0;
-        final delta = (currentContentText.length - initialLength)
-            .clamp(0, double.infinity)
-            .toInt();
+    // 文字の視認性を高めるための影のスタイル
+    final whiteTextStyle = TextStyle(
+      color: Colors.white,
+      shadows: [
+        Shadow(
+          offset: const Offset(1, 1),
+          blurRadius: 3.0,
+          color: Colors.black.withOpacity(0.6),
+        ),
+      ],
+    );
 
-        final pageToSave =
-            page ??
-            Page(
-              treeId: treeId,
-              title: titleController.text,
-              content: currentContentText,
-              createdAt: DateTime.now(),
-              updatedAt: null,
-            );
-
-        await ref
-            .read(pageViewModelProvider(treeId).notifier)
-            .saveAndGrowPage(
-              page: pageToSave,
-              newTitle: titleController.text,
-              newContent: currentContentText,
-            );
-
-        if (!context.mounted) return;
-
-        // 2. 成功時：成長ダイアログを表示
-        await showDialog(
-          context: context,
-          barrierDismissible: false, // ユーザーがボタンを押すまで閉じない
-          builder: (context) => AlertDialog(
-            title: const Text('保存完了'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
-                const SizedBox(height: 16),
-                Text(delta > 0 ? '木が $delta 文字分、成長しました！' : 'ノートを保存しました。'),
-              ],
+    return Scaffold(
+      extendBodyBehindAppBar: true, // 背景をAppBarの裏まで広げる
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(page == null ? '新しいページ' : '編集', style: whiteTextStyle),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check, color: Colors.white),
+            onPressed: () => _saveNote(
+              context,
+              ref,
+              titleController.text,
+              contentController.text,
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // ダイアログを閉じる
-                },
-                child: const Text('閉じる'),
+          ),
+        ],
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/page_image.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 成長インジケーター（透過させた白で浮かせる）
+              if (delta > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  color: Colors.white.withOpacity(0.15),
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  child: Text(
+                    '＋$delta 文字 成長中！',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+
+              // タイトル入力
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 10,
+                ),
+                child: TextField(
+                  controller: titleController,
+                  cursorColor: Colors.white,
+                  decoration: InputDecoration(
+                    hintText: 'タイトル',
+                    border: InputBorder.none,
+                    hintStyle: whiteTextStyle.copyWith(
+                      fontSize: 22,
+                      color: Colors.white60,
+                    ),
+                  ),
+                  style: whiteTextStyle.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              const Divider(
+                height: 1,
+                color: Colors.white24,
+                indent: 20,
+                endIndent: 20,
+              ),
+
+              // 本文入力
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: TextField(
+                    controller: contentController,
+                    maxLines: null,
+                    expands: true,
+                    cursorColor: Colors.white,
+                    decoration: InputDecoration(
+                      hintText: 'ここに言葉を綴ると、木が育ちます...',
+                      border: InputBorder.none,
+                      hintStyle: whiteTextStyle.copyWith(
+                        fontSize: 16,
+                        color: Colors.white60,
+                      ),
+                    ),
+                    style: whiteTextStyle.copyWith(fontSize: 18, height: 1.8),
+                  ),
+                ),
               ),
             ],
           ),
-        );
-      } catch (e) {
-        // 3. エラー時：ユーザーに通知
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Icon(Icons.error_outline, color: Colors.red),
-                ),
-                Text('$e', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-            backgroundColor: Colors.white,
-          ),
-        );
-      }
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(page == null ? '新しいノート' : '編集'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () async {
-              saveNote(context);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 成長インジケーター（執筆中にモチベーションを上げる）
-          if (delta > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              color: Colors.green.shade50,
-              width: double.infinity,
-              alignment: Alignment.center,
-              child: Text(
-                '＋$delta 文字 成長中！',
-                style: const TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                hintText: 'タイトル',
-                border: InputBorder.none,
-                hintStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: contentController,
-                maxLines: null,
-                expands: true,
-                decoration: const InputDecoration(
-                  hintText: 'ここに言葉を綴ると、木が育ちます...',
-                  border: InputBorder.none,
-                ),
-                style: const TextStyle(fontSize: 16, height: 1.5),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  // 保存処理の切り出し
+  Future<void> _saveNote(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    String content,
+  ) async {
+    try {
+      final initialLength = page?.content.length ?? 0;
+      final delta = (content.length - initialLength)
+          .clamp(0, double.infinity)
+          .toInt();
+
+      final pageToSave =
+          page ??
+          Page(
+            treeId: treeId,
+            title: title,
+            content: content,
+            createdAt: DateTime.now(),
+            updatedAt: null,
+          );
+
+      await ref
+          .read(pageViewModelProvider(treeId).notifier)
+          .saveAndGrowPage(
+            page: pageToSave,
+            newTitle: title,
+            newContent: content,
+          );
+
+      if (!context.mounted) return;
+
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.white.withOpacity(0.9),
+          title: const Text('保存完了'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
+              const SizedBox(height: 16),
+              Text(delta > 0 ? '木が $delta 文字分、成長しました！' : 'ノートを保存しました。'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('閉じる'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e'), backgroundColor: Colors.redAccent),
+      );
+    }
   }
 }

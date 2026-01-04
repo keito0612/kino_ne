@@ -38,10 +38,26 @@ class AddTreeDialog extends HookConsumerWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          TextFormField(
+            autovalidateMode: AutovalidateMode.always,
+            // TextField から TextFormField に変更
             controller: nameController,
-            decoration: const InputDecoration(labelText: '木の名前'),
+            decoration: const InputDecoration(
+              labelText: '木の名前',
+              hintText: '例: 桜',
+            ),
             autofocus: true,
+
+            // --- バリデーションロジック ---
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '木の名前を入力してください';
+              }
+              if (value.length < 2) {
+                return '2文字以上で入力してください';
+              }
+              return null; // 問題なければ null を返す
+            },
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
@@ -49,7 +65,15 @@ class AddTreeDialog extends HookConsumerWidget {
             items: treeTypes
                 .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                 .toList(),
-            onChanged: (val) => selectedType.value = val!,
+            onChanged: (val) {
+              selectedType.value = val!;
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '木の種類を選択してください。';
+              }
+              return null;
+            },
           ),
         ],
       ),

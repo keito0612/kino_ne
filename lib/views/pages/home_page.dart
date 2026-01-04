@@ -174,13 +174,8 @@ class HomePage extends HookConsumerWidget {
             TreeVisualizer(tree: tree, baseSize: 60),
             const SizedBox(height: 12),
             Text(
-              tree.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            Text(
-              '${tree.totalChars} 文字',
-              style: const TextStyle(color: Colors.grey, fontSize: 11),
+              '合計:${tree.totalChars} 文字',
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
           ],
         ),

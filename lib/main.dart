@@ -4,6 +4,7 @@ import 'package:kino_ne/views/pages/editor_page.dart';
 import 'package:kino_ne/views/pages/home_page.dart';
 import 'package:kino_ne/views/pages/tree_detail_page.dart';
 import 'models/page.dart' as model; // 名前の衝突を避けるためにここでも as model を使用
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   // アプリ全体で Riverpod を使用可能にする
@@ -16,6 +17,13 @@ class MyForestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      supportedLocales: const [Locale('ja', 'JP')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      locale: const Locale('ja', 'JP'),
       title: '言葉の森',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

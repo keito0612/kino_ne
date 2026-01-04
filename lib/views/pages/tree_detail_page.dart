@@ -8,6 +8,7 @@ import 'package:kino_ne/view_models/growth_log/growth_log_view_model.dart';
 import 'package:kino_ne/view_models/page/page_view_model.dart';
 import 'package:kino_ne/view_models/tree/tree_view_model.dart';
 import 'package:kino_ne/views/pages/editor_page.dart';
+import 'package:kino_ne/views/pages/preview_page.dart';
 import 'package:kino_ne/views/widgets/tree_visualizer_widget.dart';
 
 class TreeDetailPage extends HookConsumerWidget {
@@ -47,6 +48,25 @@ class TreeDetailPage extends HookConsumerWidget {
             icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
             onPressed: () => _confirmDelete(context, ref, tree.name),
           ),
+          IconButton(
+            icon: const Icon(
+              Icons.visibility_outlined,
+              color: AppColors.primaryGreen,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PreviewPage(
+                    tree: tree,
+                    allPages: pagesAsync.value ?? [],
+                    initialIndex: 0,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
