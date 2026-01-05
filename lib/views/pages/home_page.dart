@@ -43,7 +43,7 @@ class HomePage extends HookConsumerWidget {
                               crossAxisCount: 2,
                               mainAxisSpacing: 16,
                               crossAxisSpacing: 16,
-                              childAspectRatio: 0.85,
+                              childAspectRatio: 0.95,
                             ),
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final tree = trees[index];
@@ -172,7 +172,7 @@ class HomePage extends HookConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TreeVisualizer(tree: tree, baseSize: 60),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             Text(
               '合計:${tree.totalChars} 文字',
               style: const TextStyle(color: Colors.grey, fontSize: 14),

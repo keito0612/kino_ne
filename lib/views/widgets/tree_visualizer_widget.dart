@@ -17,6 +17,11 @@ class TreeVisualizer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 次のレベルまでの計算
+    const charsPerLevel = 100;
+    final progress = (tree.totalChars % charsPerLevel) / charsPerLevel;
+    final charsNeeded = charsPerLevel - (tree.totalChars % charsPerLevel);
+
     // 育つほど色が深く、濃くなる
     final treeColor = Color.lerp(
       Colors.lightGreen.shade400,
@@ -24,7 +29,7 @@ class TreeVisualizer extends StatelessWidget {
       (tree.stage / 4).clamp(0.0, 1.0),
     );
 
-    final size = baseSize + (tree.stage * 15);
+    final size = baseSize;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -42,7 +47,7 @@ class TreeVisualizer extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // ★ 追加：木の名前を表示
+        // 木の名前
         Text(
           tree.name,
           style: TextStyle(
@@ -52,22 +57,53 @@ class TreeVisualizer extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
-          overflow: TextOverflow.ellipsis, // 長すぎる名前は「...」にする
+          overflow: TextOverflow.ellipsis,
         ),
 
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
 
-        // 次のレベルへの経験値バー
-        if (isProgressIndicator)
-          SizedBox(
-            width: 80,
-            child: LinearProgressIndicator(
-              value: (tree.totalChars % 100) / 100,
-              backgroundColor: Colors.grey.shade200,
-              color: treeColor,
-              minHeight: 4,
+        // --- 追加：レベルと「あと◯文字」の表示 ---
+        if (isProgressIndicator) ...[
+          // レベル（Stage）バッジ
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: treeColor!.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'Lv.${tree.stage + 1}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: treeColor,
+              ),
             ),
           ),
+          const SizedBox(height: 4),
+          // 経験値バー
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.grey.shade200,
+                  color: treeColor,
+                  minHeight: 4,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // あと◯文字
+          Text(
+            'あと $charsNeeded 文字',
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          ),
+        ],
       ],
     );
   }

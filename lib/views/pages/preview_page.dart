@@ -153,10 +153,13 @@ class PreviewPage extends HookConsumerWidget {
             const Divider(height: 32, color: Colors.white30),
             Stack(
               children: [
-                _buildLines(),
                 Text(
                   page.content,
-                  style: textStyleBase.copyWith(fontSize: 18, height: 2.22),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
@@ -199,21 +202,6 @@ class PreviewPage extends HookConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // 罫線も白に変更
-  Widget _buildLines() {
-    return Column(
-      children: List.generate(
-        30,
-        (i) => Container(
-          height: 40,
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.white24)),
-          ),
-        ),
       ),
     );
   }

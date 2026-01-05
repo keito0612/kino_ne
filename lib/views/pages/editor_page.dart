@@ -125,7 +125,7 @@ class EditorPage extends HookConsumerWidget {
                     expands: true,
                     cursorColor: Colors.white,
                     decoration: InputDecoration(
-                      hintText: 'ここに言葉を綴ると、木が育ちます...',
+                      hintText: '内容',
                       border: InputBorder.none,
                       hintStyle: whiteTextStyle.copyWith(
                         fontSize: 16,

@@ -33,13 +33,13 @@ class TreeDetailPage extends HookConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textDark),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.cardColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          tree.name,
+          '詳細',
           style: const TextStyle(
-            color: AppColors.textDark,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -51,7 +51,7 @@ class TreeDetailPage extends HookConsumerWidget {
           IconButton(
             icon: const Icon(
               Icons.visibility_outlined,
-              color: AppColors.primaryGreen,
+              color: AppColors.cardColor,
             ),
             onPressed: () {
               Navigator.push(
@@ -89,6 +89,7 @@ class TreeDetailPage extends HookConsumerWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
+                          color: Colors.white,
                         ),
                         textAlign: TextAlign.start,
                       ),
@@ -101,7 +102,13 @@ class TreeDetailPage extends HookConsumerWidget {
                               const Center(
                                 child: Padding(
                                   padding: EdgeInsets.only(top: 20),
-                                  child: Text('まだノートがありません。'),
+                                  child: Text(
+                                    'まだノートがありません。',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ]
@@ -137,7 +144,7 @@ class TreeDetailPage extends HookConsumerWidget {
       child: TreeVisualizer(
         tree: tree,
         titleFontSize: 22,
-        baseSize: 160,
+        baseSize: 80,
         isProgressIndicator: false,
       ),
     );
@@ -149,10 +156,19 @@ class TreeDetailPage extends HookConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
+        // --- 追加：カードの背景を木の画像にする ---
+        image: const DecorationImage(
+          image: AssetImage('assets/images/page_image.png'),
+          fit: BoxFit.cover,
+        ),
+        // 木の画像より少し暗いシャドウを入れると浮き出て見えます
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -170,7 +186,7 @@ class TreeDetailPage extends HookConsumerWidget {
           Text(
             textAlign: TextAlign.start,
             '合計: ${tree.totalChars} 文字',
-            style: const TextStyle(color: Colors.grey),
+            style: const TextStyle(color: Colors.white),
           ),
           const SizedBox(height: 16),
           ClipRRect(
@@ -190,7 +206,7 @@ class TreeDetailPage extends HookConsumerWidget {
   Widget _bulidNoteCardList(BuildContext context, List<Page> pages) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.3,
+        maxHeight: MediaQuery.of(context).size.height * 0.48,
       ),
       child: ListView(
         children: pages.map((page) => _buildNoteCard(context, page)).toList(),
@@ -200,23 +216,71 @@ class TreeDetailPage extends HookConsumerWidget {
 
   // ノート（Page）のカードデザイン
   Widget _buildNoteCard(BuildContext context, Page page) {
+    // 文字の視認性を高めるためのスタイル（PreviewPageと同様）
+    final cardTextStyle = TextStyle(
+      color: Colors.white,
+      shadows: [
+        Shadow(
+          offset: const Offset(1, 1),
+          blurRadius: 3.0,
+          color: Colors.black.withOpacity(0.6),
+        ),
+      ],
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
         borderRadius: BorderRadius.circular(16),
+        // --- 追加：カードの背景を木の画像にする ---
+        image: const DecorationImage(
+          image: AssetImage('assets/images/page_image.png'),
+          fit: BoxFit.cover,
+        ),
+        // 木の画像より少し暗いシャドウを入れると浮き出て見えます
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      // 画像が角丸からはみ出さないように設定
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         title: Text(
           page.title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: cardTextStyle.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
-        subtitle: Text(
-          '${page.content.length} 文字 • ${page.updatedAt.toString().split(' ')[0]}',
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${page.content.length} 文字',
+              style: cardTextStyle.copyWith(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              '${page.updatedAt?.toString() ?? page.createdAt.toString().split(' ')[0]}',
+              style: cardTextStyle.copyWith(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white),
         onTap: () {
+          // 以前修正した、PreviewPageへの遷移（リストとインデックスを渡す形）
           Navigator.push(
             context,
             MaterialPageRoute(
