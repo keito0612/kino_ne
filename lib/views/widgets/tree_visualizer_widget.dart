@@ -53,7 +53,7 @@ class TreeVisualizer extends StatelessWidget {
           style: TextStyle(
             fontSize: titleFontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Colors.white,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
@@ -98,10 +98,9 @@ class TreeVisualizer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // あと◯文字
           Text(
-            'あと $charsNeeded 文字',
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+            '次のレベルまで、あと$charsNeeded 文字',
+            style: TextStyle(fontSize: 10, color: Colors.white70),
           ),
         ],
       ],

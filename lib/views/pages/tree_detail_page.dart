@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart' hide Page;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:kino_ne/models/growth_log.dart';
+import 'package:flutter_hooks/flutter_hooks.dart'; // Hooksを追加
 import 'package:kino_ne/models/page.dart';
 import 'package:kino_ne/models/tree.dart';
 import 'package:kino_ne/theme/app_colors.dart';
-import 'package:kino_ne/view_models/growth_log/growth_log_view_model.dart';
 import 'package:kino_ne/view_models/page/page_view_model.dart';
 import 'package:kino_ne/view_models/tree/tree_view_model.dart';
 import 'package:kino_ne/views/pages/editor_page.dart';
@@ -17,6 +16,10 @@ class TreeDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // --- 状態管理 (Hooks) ---
+    final isEditMode = useState(false); // 削除モードかどうか
+    final selectedPageIds = useState<List<int>>([]); // 選択されたPageのIDリスト
+
     final pagesAsync = ref.watch(pageViewModelProvider(treeId));
     final tree = ref
         .watch(treeViewModelProvider)
@@ -33,8 +36,18 @@ class TreeDetailPage extends HookConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.cardColor),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(
+            isEditMode.value ? Icons.close : Icons.arrow_back_ios,
+            color: AppColors.cardColor,
+          ),
+          onPressed: () {
+            if (isEditMode.value) {
+              isEditMode.value = false;
+              selectedPageIds.value = [];
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
         title: Text(
           '詳細',
@@ -44,113 +57,256 @@ class TreeDetailPage extends HookConsumerWidget {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () => _confirmDelete(context, ref, tree.name),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.visibility_outlined,
-              color: AppColors.cardColor,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PreviewPage(
-                    tree: tree,
-                    allPages: pagesAsync.value ?? [],
-                    initialIndex: 0,
-                  ),
+          // 削除ボタン：モードによって表示が変わる
+          if (isEditMode.value)
+            TextButton.icon(
+              onPressed: selectedPageIds.value.isEmpty
+                  ? null
+                  : () => _confirmBulkDelete(context, ref, selectedPageIds),
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
+              label: Text(
+                '削除（${selectedPageIds.value.length}）',
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            },
-          ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: () => isEditMode.value = true,
+            ),
+
+          if (!isEditMode.value)
+            IconButton(
+              icon: const Icon(
+                Icons.visibility_outlined,
+                color: AppColors.cardColor,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PreviewPage(
+                      tree: tree,
+                      allPages: pagesAsync.value ?? [],
+                      initialIndex: 0,
+                    ),
+                  ),
+                );
+              },
+            ),
           const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 2. 統計カード (累計文字数)
             _buildStatsCard(tree),
-
-            // 4. ノート一覧セクション
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
                 children: [
-                  Padding(
-                    padding: EdgeInsetsGeometry.only(bottom: 12),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Text(
-                        'ノート一覧',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.start,
+                  const SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'ノート一覧',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
                   pagesAsync.when(
-                    data: (pages) => Column(
-                      children: pages.isEmpty
-                          ? [
-                              const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.only(top: 20),
-                                  child: Text(
-                                    'まだノートがありません。',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                    data: (pages) => pages.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Text(
+                                'まだノートがありません。',
+                                style: TextStyle(color: Colors.white),
                               ),
-                            ]
-                          : [_bulidNoteCardList(context, pages)],
-                    ),
+                            ),
+                          )
+                        : _buildNoteCardList(
+                            context,
+                            pages,
+                            isEditMode,
+                            selectedPageIds,
+                          ),
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (err, _) =>
-                        Center(child: Text('ページ一覧の情報を取得することができませんでした。')),
+                        const Center(child: Text('情報の取得に失敗しました')),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 80), // 下部の余白
+            const SizedBox(height: 80),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primaryGreen,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => EditorPage(treeId: treeId)),
+      floatingActionButton: isEditMode.value
+          ? null
+          : FloatingActionButton(
+              backgroundColor: AppColors.primaryGreen,
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditorPage(treeId: treeId),
+                ),
+              ),
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+    );
+  }
+
+  // ノート一覧リスト
+  Widget _buildNoteCardList(
+    BuildContext context,
+    List<Page> pages,
+    ValueNotifier<bool> isEditMode,
+    ValueNotifier<List<int>> selectedPageIds,
+  ) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: pages.length,
+      itemBuilder: (context, index) {
+        final page = pages[index];
+        final isSelected = selectedPageIds.value.contains(page.id);
+
+        return _buildNoteCard(context, page, isEditMode.value, isSelected, () {
+          if (isEditMode.value) {
+            // IDを取得。もしページIDがnullならスキップ
+            final id = page.id;
+            if (id == null) return;
+
+            if (isSelected) {
+              selectedPageIds.value = selectedPageIds.value
+                  .where((val) => val != id)
+                  .toList();
+            } else {
+              selectedPageIds.value = [...selectedPageIds.value, id];
+            }
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EditorPage(treeId: treeId, page: page),
+              ),
+            );
+          }
+        });
+      },
+    );
+  }
+
+  // 1枚のノートカード
+  Widget _buildNoteCard(
+    BuildContext context,
+    Page page,
+    bool isEditMode,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    final cardTextStyle = TextStyle(
+      color: Colors.white,
+      shadows: [
+        Shadow(
+          offset: const Offset(1, 1),
+          blurRadius: 3.0,
+          color: Colors.black.withOpacity(0.6),
         ),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      ],
     );
-  }
 
-  // 木のヒーローセクション
-  Widget _buildTreeHero(Tree tree) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: TreeVisualizer(
-        tree: tree,
-        titleFontSize: 22,
-        baseSize: 80,
-        isProgressIndicator: false,
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/page_image.png'),
+          fit: BoxFit.cover,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        // 削除モード時はチェックボックス、通常時はなし
+        leading: isEditMode
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (_) => onTap(),
+                activeColor: Colors.redAccent,
+                side: const BorderSide(color: Colors.white, width: 2),
+              )
+            : null,
+        title: Text(
+          page.title,
+          style: cardTextStyle.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        subtitle: Text(
+          '${page.content.length} 文字 • ${page.updatedAt?.toString().split(' ')[0] ?? page.createdAt.toString().split(' ')[0]}',
+          style: cardTextStyle.copyWith(fontSize: 12),
+        ),
+        trailing: isEditMode
+            ? null
+            : const Icon(Icons.chevron_right, color: Colors.white),
       ),
     );
   }
 
-  // 統計カード
+  // まとめて削除のダイアログ
+  void _confirmBulkDelete(
+    BuildContext context,
+    WidgetRef ref,
+    ValueNotifier<List<int>> selectedPageIds,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ページの削除'),
+        content: Text(
+          '${selectedPageIds.value.length}件のページを削除しますか？\nこの操作は取り消せません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final notifier = ref.read(pageViewModelProvider(treeId).notifier);
+              // ViewModelにまとめて削除するメソッドがあると仮定（またはループで削除）
+              for (final id in selectedPageIds.value) {
+                await notifier.deletePage(id);
+              }
+              selectedPageIds.value = []; // クリア
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('削除する', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 統計カードなどは元のデザインを維持 ---
   Widget _buildStatsCard(Tree tree) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -203,117 +359,14 @@ class TreeDetailPage extends HookConsumerWidget {
     );
   }
 
-  Widget _bulidNoteCardList(BuildContext context, List<Page> pages) {
+  Widget _buildTreeHero(Tree tree) {
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.48,
-      ),
-      child: ListView(
-        children: pages.map((page) => _buildNoteCard(context, page)).toList(),
-      ),
-    );
-  }
-
-  // ノート（Page）のカードデザイン
-  Widget _buildNoteCard(BuildContext context, Page page) {
-    // 文字の視認性を高めるためのスタイル（PreviewPageと同様）
-    final cardTextStyle = TextStyle(
-      color: Colors.white,
-      shadows: [
-        Shadow(
-          offset: const Offset(1, 1),
-          blurRadius: 3.0,
-          color: Colors.black.withOpacity(0.6),
-        ),
-      ],
-    );
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        // --- 追加：カードの背景を木の画像にする ---
-        image: const DecorationImage(
-          image: AssetImage('assets/images/page_image.png'),
-          fit: BoxFit.cover,
-        ),
-        // 木の画像より少し暗いシャドウを入れると浮き出て見えます
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      // 画像が角丸からはみ出さないように設定
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        title: Text(
-          page.title,
-          style: cardTextStyle.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${page.content.length} 文字',
-              style: cardTextStyle.copyWith(
-                fontSize: 12,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              '${page.updatedAt?.toString() ?? page.createdAt.toString().split(' ')[0]}',
-              style: cardTextStyle.copyWith(
-                fontSize: 12,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white),
-        onTap: () {
-          // 以前修正した、PreviewPageへの遷移（リストとインデックスを渡す形）
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EditorPage(treeId: treeId, page: page),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, WidgetRef ref, String treeName) {
-    // 既存の日本語ダイアログ処理を継続
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('木の削除'),
-        content: Text('「$treeName」を削除しますか？\n書いたノートもすべて消えてしまいます。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.read(treeViewModelProvider.notifier).removeTree(treeId);
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('削除する', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TreeVisualizer(
+        tree: tree,
+        titleFontSize: 22,
+        baseSize: 80,
+        isProgressIndicator: false,
       ),
     );
   }

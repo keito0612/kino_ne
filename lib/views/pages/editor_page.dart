@@ -25,16 +25,7 @@ class EditorPage extends HookConsumerWidget {
         .toInt();
 
     // 文字の視認性を高めるための影のスタイル
-    final whiteTextStyle = TextStyle(
-      color: Colors.white,
-      shadows: [
-        Shadow(
-          offset: const Offset(1, 1),
-          blurRadius: 3.0,
-          color: Colors.black.withOpacity(0.6),
-        ),
-      ],
-    );
+    final whiteTextStyle = TextStyle(color: Colors.white);
 
     return Scaffold(
       extendBodyBehindAppBar: true, // 背景をAppBarの裏まで広げる
@@ -185,7 +176,6 @@ class EditorPage extends HookConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
               const SizedBox(height: 16),
               Text(delta > 0 ? '木が $delta 文字分、成長しました！' : 'ノートを保存しました。'),
             ],

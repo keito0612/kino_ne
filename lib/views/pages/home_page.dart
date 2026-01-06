@@ -19,81 +19,84 @@ class HomePage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bgColor,
-      body: DynamicForestBackground(
-        treeCount: treesAsync.value?.length ?? 0,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader(todayGrowthAsync)),
-            // 2. 木のグリッド表示
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: treesAsync.when(
-                data: (trees) => trees.isEmpty
-                    ? const SliverToBoxAdapter(
-                        child: Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 40),
-                            child: Text('まだ木がありません。\n新しい木を植えてみましょう。'),
-                          ),
-                        ),
-                      )
-                    : SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 0.95,
+      body: Stack(
+        children: [
+          DynamicForestBackground(
+            treeCount: treesAsync.value?.length ?? 0,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  _buildHeader(todayGrowthAsync),
+                  Expanded(
+                    child: treesAsync.when(
+                      data: (trees) => trees.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'まだ木がありません。\n新しい木を植えてみましょう。',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            )
+                          : GridView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 16,
+                                    crossAxisSpacing: 16,
+                                    childAspectRatio: 0.95,
+                                  ),
+                              itemCount: trees.length,
+                              itemBuilder: (context, index) {
+                                return _buildTreeCard(context, trees[index]);
+                              },
                             ),
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final tree = trees[index];
-                          return _buildTreeCard(context, tree);
-                        }, childCount: trees.length),
-                      ),
-                loading: () => const SliverToBoxAdapter(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (err, _) =>
-                    SliverToBoxAdapter(child: Center(child: Text('エラー: $err'))),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (err, _) => Center(child: Text('エラー: $err')),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            // 3. 「新しい木を植える」ボタン
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 32,
-                ),
-                child: _buildPlantButton(context),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
-          ],
-        ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: MediaQuery.of(context).padding.bottom + 20, // 端末のセーフエリアを考慮
+            child: _buildPlantButton(context),
+          ),
+        ],
       ),
     );
   }
 
-  // 修正：隙間を解消したヘッダー
+  // 固定ヘッダーのデザイン
   Widget _buildHeader(AsyncValue<int> todayGrowth) {
     return Container(
-      // 太陽アイコンがステータスバーに被らないよう top を調整
-      padding: const EdgeInsets.only(top: 60, bottom: 24, left: 24, right: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         children: [
-          const SizedBox(height: 8),
           const Text(
             'あなたの森',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
+              color: Colors.white, // 木の背景に合わせて白に変更
+              shadows: [
+                Shadow(
+                  offset: Offset(0, 1),
+                  blurRadius: 4,
+                  color: Colors.black26,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-
-          // 今日の進捗バー（デザイン案のカード風）
+          const SizedBox(height: 16),
           todayGrowth.when(
             data: (count) {
               const dailyGoal = 500;
@@ -101,8 +104,9 @@ class HomePage extends HookConsumerWidget {
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withOpacity(0.15), // 背景に馴染む透過白
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
                 ),
                 child: Column(
                   children: [
@@ -111,11 +115,12 @@ class HomePage extends HookConsumerWidget {
                       children: [
                         const Text(
                           '今日の目標',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
                           '$count / $dailyGoal 文字',
                           style: const TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -127,19 +132,16 @@ class HomePage extends HookConsumerWidget {
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: Colors.black.withOpacity(0.05),
+                        backgroundColor: Colors.white.withOpacity(0.1),
                         color: AppColors.primaryGreen,
-                        minHeight: 8,
+                        minHeight: 6,
                       ),
                     ),
                   ],
                 ),
               );
             },
-            loading: () => const SizedBox(
-              height: 60,
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            loading: () => const SizedBox(height: 60),
             error: (_, __) => const SizedBox.shrink(),
           ),
         ],
@@ -150,18 +152,21 @@ class HomePage extends HookConsumerWidget {
   Widget _buildTreeCard(BuildContext context, Tree tree) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
+        image: const DecorationImage(
+          image: AssetImage('assets/images/page_image.png'),
+          fit: BoxFit.fitWidth,
+        ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -171,11 +176,22 @@ class HomePage extends HookConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TreeVisualizer(tree: tree, baseSize: 60),
-            const SizedBox(height: 6),
-            Text(
-              '合計:${tree.totalChars} 文字',
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            TreeVisualizer(tree: tree, baseSize: 55),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${tree.totalChars} 文字',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -186,15 +202,17 @@ class HomePage extends HookConsumerWidget {
   Widget _buildPlantButton(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: () => _showAddTreeDialog(context),
-      icon: const Icon(Icons.add),
-      label: const Text('新しい木を植える'),
+      icon: const Icon(Icons.park_rounded), // アイコンを木に変更
+      label: const Text(
+        '新しい木を植える',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textDark,
+        backgroundColor: AppColors.primaryGreen,
+        foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 0,
-        side: BorderSide(color: Colors.black.withOpacity(0.05)),
+        elevation: 8,
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:kino_ne/views/pages/editor_page.dart';
 import 'package:kino_ne/views/pages/home_page.dart';
+import 'package:kino_ne/views/pages/main_page.dart';
 import 'package:kino_ne/views/pages/tree_detail_page.dart';
 import 'models/page.dart' as model; // 名前の衝突を避けるためにここでも as model を使用
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -42,9 +43,7 @@ class MyForestApp extends StatelessWidget {
           ),
         ),
       ),
-
-      // 最初の画面
-      home: const HomePage(),
+      home: const MainPage(),
     );
   }
 }

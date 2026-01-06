@@ -105,17 +105,7 @@ class PreviewPage extends HookConsumerWidget {
     int current,
     int total,
   ) {
-    // 文字に影をつけて可読性を上げるためのスタイル
-    final textStyleBase = TextStyle(
-      color: Colors.white,
-      shadows: [
-        Shadow(
-          offset: const Offset(1, 1),
-          blurRadius: 3.0,
-          color: Colors.black.withOpacity(0.5),
-        ),
-      ],
-    );
+    final textStyleBase = TextStyle(color: Colors.white);
 
     return SafeArea(
       child: SingleChildScrollView(
