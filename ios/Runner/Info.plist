@@ -8,6 +8,10 @@
     <array>
         <string>ja</string>
     </array>
+	<key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>App-Prefs</string>
+    </array>
 	<key>CFBundleDisplayName</key>
 	<string>Kino Ne</string>
 	<key>CFBundleExecutable</key>

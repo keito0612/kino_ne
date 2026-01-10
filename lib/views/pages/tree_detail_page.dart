@@ -8,6 +8,7 @@ import 'package:kino_ne/view_models/page/page_view_model.dart';
 import 'package:kino_ne/view_models/tree/tree_view_model.dart';
 import 'package:kino_ne/views/pages/editor_page.dart';
 import 'package:kino_ne/views/pages/preview_page.dart';
+import 'package:kino_ne/views/widgets/tree_background.dart';
 import 'package:kino_ne/views/widgets/tree_visualizer_widget.dart';
 
 class TreeDetailPage extends HookConsumerWidget {
@@ -31,7 +32,7 @@ class TreeDetailPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bgColor,
+      backgroundColor: AppColors.primaryGreen,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -100,52 +101,20 @@ class TreeDetailPage extends HookConsumerWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
+      body: TreeBackground(
+        tree: tree,
         child: Column(
           children: [
             _buildStatsCard(tree),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                children: [
-                  const SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      'ノート一覧',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  pagesAsync.when(
-                    data: (pages) => pages.isEmpty
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: 20),
-                              child: Text(
-                                'まだノートがありません。',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          )
-                        : _buildNoteCardList(
-                            context,
-                            pages,
-                            isEditMode,
-                            selectedPageIds,
-                          ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (err, _) =>
-                        const Center(child: Text('情報の取得に失敗しました')),
-                  ),
-                ],
+              child: _buildPageList(
+                context,
+                pagesAsync,
+                isEditMode,
+                selectedPageIds,
               ),
             ),
-            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -164,8 +133,57 @@ class TreeDetailPage extends HookConsumerWidget {
     );
   }
 
-  // ノート一覧リスト
-  Widget _buildNoteCardList(
+  Widget _buildPageList(
+    BuildContext context,
+    AsyncValue<List<Page>> pagesAsync,
+    ValueNotifier<bool> isEditMode,
+    ValueNotifier<List<int>> selectedPageIds,
+  ) {
+    return Column(
+      children: [
+        const SizedBox(
+          width: double.infinity,
+          child: Text(
+            'ページ一覧',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.46,
+          child: SingleChildScrollView(
+            child: pagesAsync.when(
+              data: (pages) => pages.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: Text(
+                          'まだノートがありません。',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    )
+                  : _buildPageCardList(
+                      context,
+                      pages,
+                      isEditMode,
+                      selectedPageIds,
+                    ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => const Center(child: Text('情報の取得に失敗しました')),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  //ページ一覧リスト
+  Widget _buildPageCardList(
     BuildContext context,
     List<Page> pages,
     ValueNotifier<bool> isEditMode,

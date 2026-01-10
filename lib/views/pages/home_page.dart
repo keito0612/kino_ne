@@ -39,9 +39,11 @@ class HomePage extends HookConsumerWidget {
                               ),
                             )
                           : GridView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
+                              padding: const EdgeInsets.only(
+                                top: 10,
+                                left: 20,
+                                right: 20,
+                                bottom: 100,
                               ),
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(

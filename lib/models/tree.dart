@@ -82,4 +82,19 @@ extension TreeGrowth on Tree {
         return Icons.forest; // 巨木
     }
   }
+
+  String get bgImage {
+    switch (stage) {
+      case 0:
+        return "assets/images/bg_images/sprout.png"; // 種・芽
+      case 1:
+        return "assets/images/bg_images/sapling.png"; // 若葉
+      case 2:
+        return "assets/images/bg_images/young_leaves.png"; // 若木
+      case 3:
+        return "assets/images/bg_images/mature_tree.png"; // 成木
+      default:
+        return "assets/images/bg_images/giant_tree.png"; // 巨木
+    }
+  }
 }

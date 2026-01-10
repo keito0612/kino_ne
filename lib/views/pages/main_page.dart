@@ -19,21 +19,25 @@ class MainPage extends HookWidget {
       body: pages[selectedIndex.value],
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          indicatorColor: AppColors.primaryGreen.withOpacity(0.2),
+          labelTextStyle: WidgetStateProperty.all(
+            const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+          ),
+          indicatorColor: AppColors.primaryGreen.withOpacity(0.1),
         ),
         child: NavigationBar(
-          backgroundColor: AppColors.bgColor,
+          surfaceTintColor: Colors.white,
+          backgroundColor: AppColors.primaryGreen,
           selectedIndex: selectedIndex.value,
           onDestinationSelected: (index) => selectedIndex.value = index,
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.park_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.park, color: AppColors.primaryGreen),
+              selectedIcon: Icon(Icons.park, color: Colors.lightGreen),
               label: 'ホーム',
             ),
             NavigationDestination(
               icon: Icon(Icons.settings_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.settings, color: AppColors.primaryGreen),
+              selectedIcon: Icon(Icons.settings, color: Colors.lightGreen),
               label: '設定',
             ),
           ],
