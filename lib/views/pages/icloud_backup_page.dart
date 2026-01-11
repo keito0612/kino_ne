@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kino_ne/view_models/icloud/icloud_view_model.dart';
 import 'package:kino_ne/theme/app_colors.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ICloudBackupPage extends HookConsumerWidget {
   const ICloudBackupPage({super.key});
@@ -13,31 +13,33 @@ class ICloudBackupPage extends HookConsumerWidget {
     final backupState = ref.watch(icloudViewModelProvider);
     final lastBackupTime = useState<String>('確認中...');
     final isAutoEnabled = useState<bool>(false);
-    final isICloudAvailable = useState<bool>(true);
-    // データ取得関数
-    Future<void> refreshData() async {
+    final isICloudAvailable = useState<bool?>(null);
+
+    final lifecycleState = useAppLifecycleState();
+
+    Future<void> refreshAllStatus() async {
       lastBackupTime.value = await ref
           .read(icloudViewModelProvider.notifier)
           .getLastBackupTime();
       isAutoEnabled.value = await ref
           .read(icloudViewModelProvider.notifier)
           .isAutoBackupEnabled();
+      final available = await ref
+          .read(icloudViewModelProvider.notifier)
+          .checkConnection();
+      isICloudAvailable.value = available;
     }
 
     useEffect(() {
-      refreshData();
-      ref.read(icloudViewModelProvider.notifier).checkConnection().then((val) {
-        isICloudAvailable.value = val;
-      });
+      refreshAllStatus();
       return null;
-    }, []);
+    }, [lifecycleState]);
 
-    // 完了・エラー監視
     ref.listen<AsyncValue<void>>(icloudViewModelProvider, (previous, next) {
       next.when(
         data: (_) {
           if (previous is AsyncLoading) {
-            refreshData();
+            refreshAllStatus();
             _showCompleteDialog(context);
           }
         },
@@ -53,7 +55,7 @@ class ICloudBackupPage extends HookConsumerWidget {
           'iCloud同期',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.green,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -61,40 +63,47 @@ class ICloudBackupPage extends HookConsumerWidget {
       ),
       body: Stack(
         children: [
-          ListView(
+          Padding(
             padding: const EdgeInsets.all(20),
-            children: [
-              _buildInfoCard(lastBackupTime.value),
-              const SizedBox(height: 24),
-              _buildSettingsCard(
-                '自動バックアップ',
-                '起動時に最新データを保存します',
-                Switch(
-                  value: isAutoEnabled.value,
-                  activeThumbColor: AppColors.primaryGreen,
-                  onChanged: (val) async {
-                    isAutoEnabled.value = val;
-                    await ref
-                        .read(icloudViewModelProvider.notifier)
-                        .toggleAutoBackup(val);
-                  },
-                ),
-              ),
-              const SizedBox(height: 32),
-              _buildActionButton(
-                Icons.backup_outlined,
-                '今すぐバックアップ',
-                () => ref.read(icloudViewModelProvider.notifier).backup(),
-              ),
-              const SizedBox(height: 16),
-              _buildActionButton(
-                Icons.restore_outlined,
-                'データを復元する',
-                () => _confirmRestore(context, ref),
-                isDestructive: true,
-              ),
-            ],
+            child: isICloudAvailable.value == false
+                ? _buildICloudNotice(context)
+                : ListView(
+                    children: [
+                      _buildInfoCard(lastBackupTime.value),
+                      const SizedBox(height: 24),
+                      _buildSettingsCard(
+                        '自動バックアップ',
+                        '起動時に最新データを保存します',
+                        Switch(
+                          value: isAutoEnabled.value,
+                          activeThumbColor: AppColors.primaryGreen,
+                          onChanged: (val) async {
+                            isAutoEnabled.value = val;
+                            await ref
+                                .read(icloudViewModelProvider.notifier)
+                                .toggleAutoBackup(val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildActionButton(
+                        Icons.backup_outlined,
+                        '今すぐバックアップ',
+                        () =>
+                            ref.read(icloudViewModelProvider.notifier).backup(),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildActionButton(
+                        Icons.restore_outlined,
+                        'データを復元する',
+                        () => _confirmRestore(context, ref),
+                        isDestructive: true,
+                      ),
+                    ],
+                  ),
           ),
+
+          // ローディング表示
           if (backupState.isLoading)
             Container(
               color: Colors.black45,
@@ -103,6 +112,53 @@ class ICloudBackupPage extends HookConsumerWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildICloudNotice(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.brown.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, color: Colors.green, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'iCloudが未設定です',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'データを保存するには、iPhoneの設定でiCloudにサインインし、「iCloud Drive」をオンにする必要があります。',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => openICloudSettings(),
+              icon: const Icon(Icons.settings),
+              label: const Text('iPhoneの設定を開く'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(200, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -176,6 +232,15 @@ class ICloudBackupPage extends HookConsumerWidget {
     );
   }
 
+  Future<void> openICloudSettings() async {
+    const channel = MethodChannel("openSetting");
+    try {
+      await channel.invokeMethod('openSetting');
+    } catch (e) {
+      debugPrint('設定画面を開けませんでした: $e');
+    }
+  }
+
   void _showCompleteDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -229,66 +294,5 @@ class ICloudBackupPage extends HookConsumerWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildICloudNotice(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.brown.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orangeAccent.withOpacity(0.5)),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.cloud_off, color: Colors.orangeAccent, size: 32),
-          const SizedBox(height: 12),
-          const Text(
-            'iCloudが眠っているようです',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'ノートをクラウドで守るために、iPhoneの設定でiCloudにサインインし、「iCloud Drive」をオンにしてください。',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () async {
-              // iOSの設定画面（iCloud設定など）へ直接誘導を試みる
-              final url = Uri.parse('App-Prefs:root=CASTLE');
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orangeAccent,
-              foregroundColor: Colors.brown[900],
-            ),
-            child: const Text('設定を開く'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> openICloudSettings() async {
-    final Uri url = Uri.parse('App-Prefs:root=CASTLE');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        final Uri generalSettings = Uri.parse('package:ios_settings'); // 代替案
-        await launchUrl(generalSettings);
-      }
-    } catch (e) {
-      debugPrint('設定画面を開けませんでした: $e');
-    }
   }
 }

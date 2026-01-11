@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:kino_ne/theme/app_colors.dart';
 import 'package:kino_ne/view_models/tree/tree_view_model.dart';
 import 'package:kino_ne/views/pages/icloud_backup_page.dart';
+import 'package:kino_ne/views/pages/passcode_setting_page.dart';
 import 'package:kino_ne/views/widgets/dynamic_forest_background.dart';
 import 'package:flutter/material.dart';
 
@@ -55,7 +56,7 @@ class SettingsPage extends ConsumerWidget {
             _buildSettingsTile(SettingContent.passCode, () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ICloudBackupPage()),
+                MaterialPageRoute(builder: (context) => PasscodeSettingsPage()),
               );
             }),
             _buildSettingsTile(SettingContent.iCloud, () {
@@ -76,7 +77,7 @@ class SettingsPage extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(

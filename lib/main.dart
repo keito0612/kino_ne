@@ -1,15 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:kino_ne/views/pages/editor_page.dart';
-import 'package:kino_ne/views/pages/home_page.dart';
+import 'package:kino_ne/services/local_storage_service.dart';
+import 'package:kino_ne/view_models/passcode/passcode_view_model.dart';
 import 'package:kino_ne/views/pages/main_page.dart';
-import 'package:kino_ne/views/pages/tree_detail_page.dart';
-import 'models/page.dart' as model; // 名前の衝突を避けるためにここでも as model を使用
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  // .envファイルを読み込む
+  await dotenv.load(fileName: ".env");
   // アプリ全体で Riverpod を使用可能にする
-  runApp(const ProviderScope(child: MyForestApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        // 2. localStorageServiceProvider を実際のインスタンスで上書き
+        localStorageServiceProvider.overrideWithValue(
+          LocalStorageService(prefs),
+        ),
+      ],
+      child: const ProviderScope(child: MyForestApp()),
+    ),
+  );
 }
 
 class MyForestApp extends StatelessWidget {

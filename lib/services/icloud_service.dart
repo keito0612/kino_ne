@@ -1,18 +1,18 @@
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:icloud_storage/icloud_storage.dart';
+import 'package:kino_ne/core/database/database_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ICloudService {
   // ※Apple Developer Portalで作成したコンテナIDをここにセット
-  final String containerId = 'iCloud.com.yourdomain.kino-ne';
+  final String containerId = dotenv.get('ICLOUD_CONTAINER_ID');
   final String backupFileName = 'kino_ne_backup.db';
 
   /// iCloudへDBファイルをアップロード
   Future<void> backupToICloud() async {
-    final dbPath = await getDatabasesPath();
-    final localFilePath = join(dbPath, 'kino_ne.db');
-
+    final localFilePath = await DatabaseHelper.instance.dbPath();
     try {
       await ICloudStorage.upload(
         containerId: containerId,
@@ -29,9 +29,7 @@ class ICloudService {
 
   /// iCloudからDBファイルをダウンロードして復元
   Future<void> restoreFromICloud() async {
-    final dbPath = await getDatabasesPath();
-    final destinationPath = join(dbPath, 'kino_ne.db');
-
+    final destinationPath = await DatabaseHelper.instance.dbPath();
     try {
       await ICloudStorage.download(
         containerId: containerId,
@@ -51,6 +49,7 @@ class ICloudService {
       await ICloudStorage.gather(containerId: containerId);
       return true;
     } catch (e) {
+      print(e);
       return false;
     }
   }

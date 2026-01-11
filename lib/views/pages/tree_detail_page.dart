@@ -162,8 +162,12 @@ class TreeDetailPage extends HookConsumerWidget {
                       child: Padding(
                         padding: EdgeInsets.only(top: 20),
                         child: Text(
-                          'まだノートがありません。',
-                          style: TextStyle(color: Colors.white),
+                          'まだページがありません。',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     )

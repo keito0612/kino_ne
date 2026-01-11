@@ -72,7 +72,7 @@ class TreeVisualizer extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              'Lv.${tree.stage + 1}',
+              'Lv.${tree.level}',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,

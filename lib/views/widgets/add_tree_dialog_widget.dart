@@ -10,17 +10,14 @@ class AddTreeDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Hooks による状態管理
     final nameController = useTextEditingController();
-    final selectedType = useState('楓');
     final isLoading = useState(false);
-
-    final treeTypes = ['楓', '桜', '杉', '竹'];
 
     Future<void> submit() async {
       isLoading.value = true;
       try {
         await ref
             .read(treeViewModelProvider.notifier)
-            .addTree(name: nameController.text, type: selectedType.value);
+            .addTree(name: nameController.text);
         if (context.mounted) Navigator.pop(context);
       } catch (e) {
         if (context.mounted) {
@@ -57,22 +54,6 @@ class AddTreeDialog extends HookConsumerWidget {
                 return '2文字以上で入力してください';
               }
               return null; // 問題なければ null を返す
-            },
-          ),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            initialValue: selectedType.value,
-            items: treeTypes
-                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                .toList(),
-            onChanged: (val) {
-              selectedType.value = val!;
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '木の種類を選択してください。';
-              }
-              return null;
             },
           ),
         ],

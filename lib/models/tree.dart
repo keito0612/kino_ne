@@ -5,7 +5,6 @@ import 'growth_log.dart';
 class Tree {
   final int? id;
   final String name;
-  final String type;
   final int growthLevel;
   final DateTime createdAt;
   // 1対多のリレーション用リスト
@@ -14,7 +13,6 @@ class Tree {
   Tree({
     this.id,
     required this.name,
-    required this.type,
     this.growthLevel = 1,
     required this.createdAt,
     this.growthLogs = const [],
@@ -34,7 +32,6 @@ class Tree {
     return Tree(
       id: map['tree_id'],
       name: map['name'],
-      type: map['type'],
       growthLevel: map['growth_level'] ?? 1,
       createdAt: DateTime.parse(map['created_at']),
       growthLogs: logs ?? const [],
@@ -45,7 +42,6 @@ class Tree {
     return Tree(
       id: id,
       name: name,
-      type: type,
       growthLevel: growthLevel ?? this.growthLevel,
       createdAt: createdAt,
       growthLogs: growthLogs ?? this.growthLogs,

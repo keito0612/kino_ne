@@ -8,12 +8,13 @@ class DatabaseHelper {
   // 現在のアプリの最新バージョン
   static const int _firstVersion = 1;
   static const int _databaseVersion = 1;
+  static const String _filePath = 'kino_note.db';
 
   DatabaseHelper._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('kino_note.db');
+    _database = await _initDB();
     return _database!;
   }
 
@@ -23,7 +24,6 @@ class DatabaseHelper {
       CREATE TABLE trees (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        type TEXT NOT NULL,
         growth_level INTEGER DEFAULT 0,
         created_at TEXT NOT NULL
       )
@@ -61,9 +61,8 @@ class DatabaseHelper {
     // 2: ['ALTER TABLE ...'], // 将来の拡張
   };
 
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+  Future<Database> _initDB() async {
+    final path = await dbPath();
 
     return await openDatabase(
       path,
@@ -78,6 +77,12 @@ class DatabaseHelper {
         await _executeMigrations(db, oldVersion, newVersion);
       },
     );
+  }
+
+  Future<String> dbPath() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, _filePath);
+    return path;
   }
 
   Future<void> _executeMigrations(

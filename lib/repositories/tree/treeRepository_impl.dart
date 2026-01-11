@@ -16,7 +16,7 @@ class TreeRepositoryImpl implements TreeRepository {
 
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
     SELECT DISTINCT
-      t.id as tree_id, t.name, t.type, t.growth_level, t.created_at,
+      t.id as tree_id, t.name, t.growth_level, t.created_at,
       g.id as log_id, g.delta_chars, g.log_date
     FROM trees t
     LEFT JOIN growth_logs g ON t.id = g.tree_id
@@ -47,7 +47,6 @@ class TreeRepositoryImpl implements TreeRepository {
     // モデルをMapに変換して保存（IDは自動採番されるので渡さない）
     return await db.insert('trees', {
       'name': tree.name,
-      'type': tree.type,
       'growth_level': tree.growthLevel,
       'created_at': tree.createdAt.toIso8601String(),
     });

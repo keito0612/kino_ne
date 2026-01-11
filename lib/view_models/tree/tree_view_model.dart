@@ -21,19 +21,18 @@ class TreeViewModel extends _$TreeViewModel {
   }
 
   /// 木を新しく植える
-  Future<void> addTree({required String name, required String type}) async {
+  Future<void> addTree({required String name}) async {
     try {
       if (name.isEmpty) {
         throw ValidationException('木の名前を入力してください');
       }
 
-      final newTree = Tree(name: name, type: type, createdAt: DateTime.now());
+      final newTree = Tree(name: name, createdAt: DateTime.now());
 
       await _repository.plantTree(newTree);
 
       state = AsyncData(await _fetch());
     } catch (e) {
-      // 4. エラー解析（ExceptionHandlerが適切な例外をthrowする）
       ExceptionHandler.handle(e, '新しい木を植えることができませんでした。');
     }
   }

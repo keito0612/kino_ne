@@ -4,7 +4,6 @@ import 'package:printing/printing.dart';
 import 'package:kino_ne/models/page.dart' as model;
 
 class PdfExportService {
-  /// 木（ノート）に属する全ページを一括でPDF化して共有・印刷する
   static Future<void> exportFullNotebook(
     String title,
     List<model.Page> pages,
