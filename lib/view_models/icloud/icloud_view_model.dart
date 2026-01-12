@@ -7,7 +7,7 @@ import '../../services/icloud_service.dart';
 final icloudServiceProvider = Provider((ref) => ICloudService());
 
 final icloudViewModelProvider =
-    StateNotifierProvider<ICloudViewModel, AsyncValue<void>>((ref) {
+    StateNotifierProvider.autoDispose<ICloudViewModel, AsyncValue<void>>((ref) {
       final service = ref.watch(icloudServiceProvider);
       return ICloudViewModel(service);
     });
@@ -22,16 +22,6 @@ class ICloudViewModel extends StateNotifier<AsyncValue<void>> {
   Future<String> getLastBackupTime() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_lastBackupKey) ?? '未実施';
-  }
-
-  Future<bool> isAutoBackupEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_autoBackupKey) ?? false;
-  }
-
-  Future<void> toggleAutoBackup(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_autoBackupKey, enabled);
   }
 
   Future<void> backup() async {
@@ -52,18 +42,6 @@ class ICloudViewModel extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-    }
-  }
-
-  // 起動時などの自動バックアップ（サイレント実行）
-  Future<void> runAutoBackupIfEnabled() async {
-    if (await isAutoBackupEnabled()) {
-      try {
-        await _service.backupToICloud();
-        await _saveCurrentTimestamp();
-      } catch (e) {
-        print("自動バックアップサイレント失敗: $e");
-      }
     }
   }
 

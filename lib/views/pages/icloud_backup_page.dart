@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kino_ne/view_models/growth_log/growth_log_view_model.dart';
 import 'package:kino_ne/view_models/icloud/icloud_view_model.dart';
 import 'package:kino_ne/theme/app_colors.dart';
+import 'package:kino_ne/view_models/tree/tree_view_model.dart';
 
 class ICloudBackupPage extends HookConsumerWidget {
   const ICloudBackupPage({super.key});
@@ -12,7 +14,6 @@ class ICloudBackupPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final backupState = ref.watch(icloudViewModelProvider);
     final lastBackupTime = useState<String>('確認中...');
-    final isAutoEnabled = useState<bool>(false);
     final isICloudAvailable = useState<bool?>(null);
 
     final lifecycleState = useAppLifecycleState();
@@ -21,9 +22,6 @@ class ICloudBackupPage extends HookConsumerWidget {
       lastBackupTime.value = await ref
           .read(icloudViewModelProvider.notifier)
           .getLastBackupTime();
-      isAutoEnabled.value = await ref
-          .read(icloudViewModelProvider.notifier)
-          .isAutoBackupEnabled();
       final available = await ref
           .read(icloudViewModelProvider.notifier)
           .checkConnection();
@@ -49,7 +47,7 @@ class ICloudBackupPage extends HookConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.bgColor,
+      backgroundColor: Colors.grey,
       appBar: AppBar(
         title: const Text(
           'iCloud同期',
@@ -67,24 +65,10 @@ class ICloudBackupPage extends HookConsumerWidget {
             padding: const EdgeInsets.all(20),
             child: isICloudAvailable.value == false
                 ? _buildICloudNotice(context)
-                : ListView(
+                : Column(
                     children: [
                       _buildInfoCard(lastBackupTime.value),
                       const SizedBox(height: 24),
-                      _buildSettingsCard(
-                        '自動バックアップ',
-                        '起動時に最新データを保存します',
-                        Switch(
-                          value: isAutoEnabled.value,
-                          activeThumbColor: AppColors.primaryGreen,
-                          onChanged: (val) async {
-                            isAutoEnabled.value = val;
-                            await ref
-                                .read(icloudViewModelProvider.notifier)
-                                .toggleAutoBackup(val);
-                          },
-                        ),
-                      ),
                       const SizedBox(height: 32),
                       _buildActionButton(
                         Icons.backup_outlined,
@@ -165,18 +149,15 @@ class ICloudBackupPage extends HookConsumerWidget {
 
   Widget _buildInfoCard(String time) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.cloud_done_rounded,
-            color: Colors.blueAccent,
-            size: 48,
-          ),
+          const Icon(Icons.cloud_done_rounded, color: Colors.green, size: 48),
           const SizedBox(height: 16),
           Text(
             '最終同期: $time',
@@ -187,26 +168,6 @@ class ICloudBackupPage extends HookConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsCard(String title, String sub, Widget trailing) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-        ),
-        subtitle: Text(
-          sub,
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
-        ),
-        trailing: trailing,
       ),
     );
   }
@@ -286,8 +247,8 @@ class ICloudBackupPage extends HookConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
               ref.read(icloudViewModelProvider.notifier).restore();
+              Navigator.pop(context);
             },
             child: const Text('復元', style: TextStyle(color: Colors.red)),
           ),

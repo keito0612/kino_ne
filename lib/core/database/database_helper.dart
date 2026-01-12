@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -79,10 +81,25 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> deleteExtraFiles() async {
+    final path = await dbPath();
+    final wal = File('$path-wal');
+    final shm = File('$path-shm');
+    if (await wal.exists()) await wal.delete();
+    if (await shm.exists()) await shm.delete();
+  }
+
   Future<String> dbPath() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, _filePath);
     return path;
+  }
+
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
   }
 
   Future<void> _executeMigrations(

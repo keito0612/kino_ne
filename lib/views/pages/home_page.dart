@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:kino_ne/models/tree.dart';
 import 'package:kino_ne/theme/app_colors.dart';
@@ -17,6 +18,11 @@ class HomePage extends HookConsumerWidget {
     final treesAsync = ref.watch(treeViewModelProvider);
     final todayGrowthAsync = ref.watch(todayTotalGrowthProvider);
 
+    useEffect(() {
+      ref.invalidate(treeViewModelProvider);
+      ref.invalidate(todayTotalGrowthProvider);
+      return null;
+    }, const []);
     return Scaffold(
       backgroundColor: AppColors.bgColor,
       body: Stack(

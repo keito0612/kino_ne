@@ -33,6 +33,7 @@ class TreeViewModel extends _$TreeViewModel {
 
       state = AsyncData(await _fetch());
     } catch (e) {
+      print(e);
       ExceptionHandler.handle(e, '新しい木を植えることができませんでした。');
     }
   }

@@ -9,11 +9,11 @@ class MainPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 現在のタブインデックスを管理
     final selectedIndex = useState(0);
-
-    // 表示するページのリスト
-    final pages = [const HomePage(), const SettingsPage()];
+    final pages = [
+      HomePage(key: ValueKey('home_${selectedIndex.value}')),
+      const SettingsPage(),
+    ];
 
     return Scaffold(
       body: pages[selectedIndex.value],
