@@ -24,11 +24,10 @@ class EditorPage extends HookConsumerWidget {
         .clamp(0, double.infinity)
         .toInt();
 
-    // 文字の視認性を高めるための影のスタイル
     final whiteTextStyle = TextStyle(color: Colors.white);
 
     return Scaffold(
-      extendBodyBehindAppBar: true, // 背景をAppBarの裏まで広げる
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
