@@ -18,6 +18,15 @@ class HomePage extends HookConsumerWidget {
     final treesAsync = ref.watch(treeViewModelProvider);
     final todayGrowthAsync = ref.watch(todayTotalGrowthProvider);
 
+    final isSelectionMode = useState(false);
+
+    final selectedIds = useState<Set<int>>({});
+
+    void clearSelection() {
+      isSelectionMode.value = false;
+      selectedIds.value = {};
+    }
+
     useEffect(() {
       ref.invalidate(treeViewModelProvider);
       ref.invalidate(todayTotalGrowthProvider);
@@ -25,6 +34,32 @@ class HomePage extends HookConsumerWidget {
     }, const []);
     return Scaffold(
       backgroundColor: AppColors.bgColor,
+      appBar: isSelectionMode.value
+          ? AppBar(
+              backgroundColor: AppColors.primaryGreen,
+              title: Text(
+                '${selectedIds.value.length} 個選択中',
+                style: TextStyle(color: Colors.white),
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: clearSelection,
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: selectedIds.value.isEmpty
+                      ? null
+                      : () => _showBulkDeleteDialog(
+                          context,
+                          ref,
+                          selectedIds.value,
+                          clearSelection,
+                        ),
+                ),
+              ],
+            )
+          : null,
       body: Stack(
         children: [
           DynamicForestBackground(
@@ -33,7 +68,7 @@ class HomePage extends HookConsumerWidget {
               bottom: false,
               child: Column(
                 children: [
-                  _buildHeader(todayGrowthAsync),
+                  if (!isSelectionMode.value) _buildHeader(todayGrowthAsync),
                   Expanded(
                     child: treesAsync.when(
                       data: (trees) => trees.isEmpty
@@ -60,7 +95,12 @@ class HomePage extends HookConsumerWidget {
                                   ),
                               itemCount: trees.length,
                               itemBuilder: (context, index) {
-                                return _buildTreeCard(context, trees[index]);
+                                return _buildSelectableTreeCard(
+                                  context,
+                                  trees[index],
+                                  isSelectionMode,
+                                  selectedIds,
+                                );
                               },
                             ),
                       loading: () =>
@@ -72,12 +112,13 @@ class HomePage extends HookConsumerWidget {
               ),
             ),
           ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: MediaQuery.of(context).padding.bottom + 20, // 端末のセーフエリアを考慮
-            child: _buildPlantButton(context),
-          ),
+          if (!isSelectionMode.value)
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: MediaQuery.of(context).padding.bottom + 20,
+              child: _buildPlantButton(context),
+            ),
         ],
       ),
     );
@@ -157,8 +198,9 @@ class HomePage extends HookConsumerWidget {
     );
   }
 
-  Widget _buildTreeCard(BuildContext context, Tree tree) {
+  Widget _buildTreeCardContent(Tree tree) {
     return Container(
+      // カード全体の装飾（背景画像と角丸）
       decoration: BoxDecoration(
         image: const DecorationImage(
           image: AssetImage('assets/images/page_image.png'),
@@ -174,35 +216,29 @@ class HomePage extends HookConsumerWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TreeDetailPage(treeId: tree.id!),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TreeVisualizer(tree: tree, baseSize: 55),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${tree.totalChars} 文字',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 木のビジュアル表示（サイズはグリッドに合わせて調整）
+          TreeVisualizer(tree: tree, baseSize: 55),
+          const SizedBox(height: 8),
+          // 文字数バッジ
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${tree.totalChars} 文字',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -221,6 +257,91 @@ class HomePage extends HookConsumerWidget {
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 8,
+      ),
+    );
+  }
+
+  Widget _buildSelectableTreeCard(
+    BuildContext context,
+    Tree tree,
+    ValueNotifier<bool> isSelectionMode,
+    ValueNotifier<Set<int>> selectedIds,
+  ) {
+    final isSelected = selectedIds.value.contains(tree.id);
+    return GestureDetector(
+      onLongPress: () {
+        isSelectionMode.value = true;
+        selectedIds.value = {...selectedIds.value, tree.id!};
+      },
+      onTap: () {
+        if (isSelectionMode.value) {
+          final newSet = {...selectedIds.value};
+          if (isSelected) {
+            newSet.remove(tree.id);
+            if (newSet.isEmpty) isSelectionMode.value = false;
+          } else {
+            newSet.add(tree.id!);
+          }
+          selectedIds.value = newSet;
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TreeDetailPage(treeId: tree.id!),
+            ),
+          );
+        }
+      },
+      child: Stack(
+        children: [
+          Opacity(
+            opacity: isSelected ? 0.5 : 1.0,
+            child: _buildTreeCardContent(tree),
+          ),
+          // 選択中マーク
+          if (isSelected)
+            const Positioned(
+              top: 8,
+              right: 8,
+              child: CircleAvatar(
+                backgroundColor: Colors.green,
+                radius: 12,
+                child: Icon(Icons.check, size: 16, color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showBulkDeleteDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Set<int> ids,
+    VoidCallback onSuccess,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${ids.length}本の木を削除しますか？'),
+        content: const Text('選択した木と、そのすべてのメモが完全に削除されます。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final notifier = ref.read(treeViewModelProvider.notifier);
+              for (final id in ids) {
+                await notifier.removeTree(id);
+              }
+              onSuccess();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('削除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
