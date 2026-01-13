@@ -134,7 +134,6 @@ class EditorPage extends HookConsumerWidget {
     );
   }
 
-  // 保存処理の切り出し
   Future<void> _saveNote(
     BuildContext context,
     WidgetRef ref,

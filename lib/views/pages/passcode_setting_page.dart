@@ -79,26 +79,34 @@ class PasscodeSettingsPage extends HookConsumerWidget {
     }
   }
 
-  /// パスコードの変更
   void _handleChangePasscode(BuildContext context, WidgetRef ref) {
     final storage = ref.read(localStorageServiceProvider);
-
     screenLock(
       context: context,
       correctString: storage.getPasscode() ?? '',
       title: const Text('現在のパスコードを入力'),
-      onUnlocked: () {
-        // 認証成功したら新しいパスコードを登録
-        screenLockCreate(
-          context: context,
-          title: const Text('新しいパスコード'),
-          onConfirmed: (code) async {
-            await storage.setPasscode(code);
-            if (context.mounted) {
-              Navigator.pop(context);
-            }
-          },
-        );
+      onUnlocked: () async {
+        // 1. まず現在の「認証画面」を閉じる
+        Navigator.pop(context);
+
+        // 2. 少しだけ待機（画面が完全に閉じるのを待つとより安定します）
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // 3. 認証成功した後に、新しいパスコード作成画面を表示
+        if (context.mounted) {
+          screenLockCreate(
+            context: context,
+            title: const Text('新しいパスコード'),
+            confirmTitle: const Text('確認のためもう一度入力'), // 2回目の入力時のテキスト
+            onConfirmed: (code) async {
+              await storage.setPasscode(code);
+              // 4. 作成画面を閉じる（screenLockCreateは内部でpopするので1回でOKな場合が多い）
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+          );
+        }
       },
     );
   }

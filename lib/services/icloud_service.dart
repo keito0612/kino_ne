@@ -41,24 +41,17 @@ class ICloudService {
           stream.listen((progress) => print('ダウンロード中: $progress%'));
         },
       );
-
-      // 2. 既存のDB接続を閉じる
       await DatabaseHelper.instance.closeDatabase();
 
-      // 3. SQLiteの付随ファイル（-wal, -shm）を削除して不整合を防ぐ
       await DatabaseHelper.instance.deleteExtraFiles();
 
-      // 4. ダウンロードしたファイルを正規の場所にコピーして上書き
       final tempFile = File(tempPath);
       if (await tempFile.exists()) {
         await tempFile.copy(destinationPath);
         // 5. 使い終わった一時ファイルを削除
         await tempFile.delete();
       }
-
-      print('復元完了。次にDBアクセスが発生した際に新しいデータが読み込まれます。');
     } catch (e) {
-      print('復元エラー詳細: $e');
       throw Exception('iCloud復元失敗: $e');
     }
   }
@@ -68,7 +61,6 @@ class ICloudService {
       await ICloudStorage.gather(containerId: containerId);
       return true;
     } catch (e) {
-      print('iCloud利用不可: $e');
       return false;
     }
   }

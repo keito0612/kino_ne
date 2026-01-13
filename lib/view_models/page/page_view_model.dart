@@ -46,10 +46,7 @@ class PageViewModel extends _$PageViewModel {
         deltaChars: _getDelta(newContent, page),
       );
 
-      // リスト更新
       state = AsyncData(await _fetch());
-
-      // 木の成長（ホーム画面）を反映
       ref.invalidate(treeViewModelProvider);
     } catch (e) {
       ExceptionHandler.handle(e, 'ノートの保存に失敗しました。');

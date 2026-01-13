@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:kino_ne/services/local_storage_service.dart';
 import 'package:kino_ne/view_models/passcode/passcode_view_model.dart';
+import 'package:kino_ne/views/pages/app_launcher.dart';
 import 'package:kino_ne/views/pages/main_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,13 +12,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  // .envファイルを読み込む
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   await dotenv.load(fileName: ".env");
-  // アプリ全体で Riverpod を使用可能にする
   runApp(
     ProviderScope(
       overrides: [
-        // 2. localStorageServiceProvider を実際のインスタンスで上書き
         localStorageServiceProvider.overrideWithValue(
           LocalStorageService(prefs),
         ),
@@ -57,7 +60,7 @@ class MyForestApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainPage(),
+      home: const AppLauncher(),
     );
   }
 }

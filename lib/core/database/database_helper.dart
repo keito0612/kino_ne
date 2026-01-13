@@ -95,6 +95,15 @@ class DatabaseHelper {
     return path;
   }
 
+  Future<void> deleteFullDatabase() async {
+    final path = await dbPath();
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+    await deleteDatabase(path);
+  }
+
   Future<void> closeDatabase() async {
     if (_database != null) {
       await _database!.close();
