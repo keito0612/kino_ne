@@ -1,5 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:icloud_storage/icloud_storage.dart';
+import 'package:kino_ne/core/exceptions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../../services/icloud_service.dart';
@@ -38,6 +39,10 @@ class ICloudViewModel extends StateNotifier<AsyncValue<void>> {
   Future<void> restore() async {
     state = const AsyncValue.loading();
     try {
+      final backupFiles = await _service.getBackupFiles();
+      if (backupFiles.isEmpty) {
+        throw ValidationException('バックアップデータが見つかりませんでした。');
+      }
       await _service.restoreFromICloud();
       state = const AsyncValue.data(null);
     } catch (e, stack) {

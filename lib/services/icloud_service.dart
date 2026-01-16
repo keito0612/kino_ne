@@ -64,4 +64,10 @@ class ICloudService {
       return false;
     }
   }
+
+  Future<List<ICloudFile>> getBackupFiles() async {
+    // 指定したコンテナ内のファイル一覧を取得
+    final files = await ICloudStorage.gather(containerId: containerId);
+    return files;
+  }
 }
